@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 
-"""return product of n and multiplier"""
+"""9. Let's duck type an iterable object"""
 
-from typing import Callable
+from typing import Iterable, Sequence, List, Tuple
 
 
-def make_multiplier(multiplier: float) -> Callable[[float], float]:
-    """return product of n and multiplier"""
-    def multiply(n: float) -> float:
-        """return product of n and multiplier"""
-        return n * multiplier
-    return multiply
+def element_length(lst: Iterable[Sequence]) -> List[Tuple[Sequence, int]]:
+    """Return a list of tuples with each element from lst and its length"""
+    return [(i, len(i)) for i in lst]
