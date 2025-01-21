@@ -1,58 +1,47 @@
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
+const { readFile } = require('fs').promises;
+
 const app = express();
+const port = 1245;
 
-const databaseFilePath = process.argv[2];
+const countStudents = async (path) => {
+  try {
+    const data = await readFile(path, 'utf8');
+    const lines = data.trim().split('\n');
+    const students = lines.slice(1).filter((line) => line.length > 0);
+    const fields = {};
+    let output = '';
 
-app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'text/plain');
-  next();
-});
+    students.forEach((student) => {
+      const [firstName, , , field] = student.split(',');
+      if (!fields[field]) fields[field] = { count: 0, names: [] };
+      fields[field].count += 1;
+      fields[field].names.push(firstName);
+    });
+
+    output += `Number of students: ${students.length}\n`;
+    for (const [field, data] of Object.entries(fields)) {
+      output += `Number of students in ${field}: ${data.count}. List: ${data.names.join(', ')}\n`;
+    }
+    return output;
+  } catch (error) {
+    throw new Error('Cannot load the database');
+  }
+};
 
 app.get('/', (req, res) => {
   res.send('Hello Holberton School!');
 });
 
-app.get('/students', (req, res) => {
-  if (!databaseFilePath) {
-    res.status(500).send('Database file path is missing');
-    return;
+app.get('/students', async (req, res) => {
+  try {
+    const data = await countStudents(process.argv[2]);
+    res.send(`This is the list of our students\n${data}`);
+  } catch (error) {
+    res.send(error.message);
   }
-
-  fs.readFile(databaseFilePath, 'utf8', (err, data) => {
-    if (err) {
-      res.status(500).send('Unable to read the file');
-      return;
-    }
-
-    const lines = data.trim().split('\n').filter((line) => line.trim() !== '');
-    const students = {
-      total: 0,
-      cs: [],
-      swe: [],
-    };
-
-    lines.forEach((line) => {
-      const [name, course] = line.split(',').map((s) => s.trim());
-      if (course === 'CS') {
-        students.cs.push(name);
-      } else if (course === 'SWE') {
-        students.swe.push(name);
-      }
-      students.total += 1;
-    });
-
-    const csList = students.cs.join(', ');
-    const sweList = students.swe.join(', ');
-
-    res.send('This is the list of our students\n'
-             + `Number of students: ${students.total}\n`
-             + `Number of students in CS: ${students.cs.length}. List: ${csList}\n`
-             + `Number of students in SWE: ${students.swe.length}. List: ${sweList}`);
-  });
 });
 
-app.listen(1245);
+app.listen(port);
 
 module.exports = app;
